@@ -3,128 +3,41 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>ثبت‌نام / ورود</title>
+<title>داشبورد</title>
 <style>
-  :root{--bg:#0e1414;--panel:#161d1d;--panel2:#1c2424;--line:#2a3333;--text:#e9efee;--muted:#93a3a1;--accent:#5ee6c5;--err:#ff6b6b;}
+  :root{--bg:#0e1414;--panel:#161d1d;--text:#e9efee;--muted:#93a3a1;--accent:#5ee6c5;--line:#2a3333;}
   *{box-sizing:border-box;}
-  body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;background:var(--bg);color:var(--text);font-family:Tahoma,sans-serif;}
-  .box{width:100%;max-width:360px;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:26px 24px;margin:16px;}
-  h2{margin:0 0 4px;font-size:1.2rem;}
-  p.sub{margin:0 0 18px;color:var(--muted);font-size:.85rem;}
-  label{display:block;font-size:.82rem;color:var(--muted);margin:12px 0 6px;}
-  input{width:100%;padding:10px 12px;border-radius:8px;border:1px solid var(--line);background:var(--panel2);color:var(--text);font-size:.92rem;outline:none;direction:ltr;text-align:left;}
-  input:focus{border-color:var(--accent);}
-  button{width:100%;margin-top:18px;padding:10px 14px;border-radius:9px;border:none;background:var(--accent);color:#06231d;font-weight:700;font-size:.92rem;cursor:pointer;}
-  button:disabled{opacity:.6;cursor:default;}
-  .switch{margin-top:14px;text-align:center;font-size:.82rem;color:var(--muted);}
-  .switch a{color:var(--accent);cursor:pointer;text-decoration:none;}
-  .err{color:var(--err);font-size:.82rem;min-height:1.2em;margin-top:10px;}
-  .hint{color:var(--muted);font-size:.76rem;margin-top:4px;}
+  body{margin:0;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;background:var(--bg);color:var(--text);font-family:Tahoma,sans-serif;gap:14px;}
+  h1{font-size:1.3rem;margin:0;}
+  p{color:var(--muted);margin:0;}
+  button{padding:9px 16px;border-radius:9px;border:1px solid var(--line);background:var(--panel);color:var(--text);cursor:pointer;font-size:.88rem;}
 </style>
 </head>
 <body>
+  <h1>خوش اومدی 👋</h1>
+  <p id="whoami">در حال بررسی...</p>
+  <button id="logoutBtn">خروج</button>
 
-<div class="box">
-  <h2 id="title">ثبت‌نام</h2>
-  <p class="sub" id="sub">یه حساب تازه بساز</p>
-  <label>نام کاربری</label>
-  <input id="username" autocomplete="username" placeholder="مثلاً ali_2024">
-  <div class="hint">فقط حروف انگلیسی، عدد و _ — بدون فاصله</div>
-  <label>رمز عبور</label>
-  <input id="password" type="password" autocomplete="new-password">
-  <button id="submitBtn">ثبت‌نام</button>
-  <div class="err" id="err"></div>
-  <div class="switch"><a id="switchLink">حساب داری؟ وارد شو</a></div>
-</div>
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+    import { firebaseConfig } from "./firebase-config.js";
 
-<script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-  import {
-    getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword,
-    updateProfile, onAuthStateChanged
-  } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-  import { firebaseConfig } from "./firebase-config.js";
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
 
-  const app = initializeApp(firebaseConfig);
-  const auth = getAuth(app);
-
-  const FAKE_DOMAIN = "@usersite.app";
-  function usernameToEmail(username){
-    return username.trim().toLowerCase() + FAKE_DOMAIN;
-  }
-  function isValidUsername(username){
-    return /^[a-z0-9_]{3,20}$/i.test(username.trim());
-  }
-
-  let mode = "signup";
-  const title = document.getElementById("title");
-  const sub = document.getElementById("sub");
-  const submitBtn = document.getElementById("submitBtn");
-  const switchLink = document.getElementById("switchLink");
-  const err = document.getElementById("err");
-  const userInput = document.getElementById("username");
-  const passInput = document.getElementById("password");
-
-  function setMode(m){
-    mode = m;
-    err.textContent = "";
-    if(mode === "signup"){
-      title.textContent = "ثبت‌نام";
-      sub.textContent = "یه حساب تازه بساز";
-      submitBtn.textContent = "ثبت‌نام";
-      switchLink.textContent = "حساب داری؟ وارد شو";
-    } else {
-      title.textContent = "ورود";
-      sub.textContent = "وارد حسابت شو";
-      submitBtn.textContent = "ورود";
-      switchLink.textContent = "حساب نداری؟ ثبت‌نام کن";
-    }
-  }
-  switchLink.addEventListener("click", () => setMode(mode === "signup" ? "login" : "signup"));
-
-  submitBtn.addEventListener("click", async () => {
-    err.textContent = "";
-    const username = userInput.value.trim();
-    const password = passInput.value;
-
-    if(!isValidUsername(username)){
-      err.textContent = "نام کاربری باید ۳ تا ۲۰ کاراکتر و فقط حروف انگلیسی/عدد/_ باشه";
-      return;
-    }
-
-    submitBtn.disabled = true;
-    const email = usernameToEmail(username);
-    try{
-      if(mode === "signup"){
-        const cred = await createUserWithEmailAndPassword(auth, email, password);
-        await updateProfile(cred.user, { displayName: username });
-      } else {
-        await signInWithEmailAndPassword(auth, email, password);
+    onAuthStateChanged(auth, (user) => {
+      if(!user){
+        location.href = "index.html";
+        return;
       }
-      location.href = "dashboard.html";
-    }catch(e){
-      err.textContent = translateError(e.code);
-    }finally{
-      submitBtn.disabled = false;
-    }
-  });
+      document.getElementById("whoami").textContent = "وارد شدی با: " + (user.displayName || "کاربر");
+    });
 
-  function translateError(code){
-    const map = {
-      "auth/invalid-email": "نام کاربری معتبر نیست",
-      "auth/user-not-found": "همچین حسابی پیدا نشد",
-      "auth/wrong-password": "رمز عبور اشتباه است",
-      "auth/email-already-in-use": "این نام کاربری قبلاً گرفته شده",
-      "auth/weak-password": "رمز عبور باید حداقل ۶ کاراکتر باشد"
-    };
-    return map[code] || "خطایی رخ داد، دوباره امتحان کن";
-  }
-
-  onAuthStateChanged(auth, (user) => {
-    if(user) location.href = "dashboard.html";
-  });
-
-  setMode("signup");
-</script>
+    document.getElementById("logoutBtn").addEventListener("click", async () => {
+      await signOut(auth);
+      location.href = "index.html";
+    });
+  </script>
 </body>
 </html>
